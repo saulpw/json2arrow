@@ -82,6 +82,15 @@ def schemify(d):
     elif isinstance(d, list):
         return pa.list_(schemify(d[0]))
 
+    elif isinstance(d, float):
+        return pa.float32()
+
+    elif isinstance(d, bool):
+        return pa.bool_()
+
+    elif isinstance(d, int):
+        return pa.int64()
+
     else:
         return pa.string()
 
@@ -93,7 +102,7 @@ def schema_to_arrow(d):
 def main():
     schema = None
     for fn in sys.argv[1:]:
-        for row in rsd.parse_jsonl(map(bytes.decode, gzip.open(fn))):
+        for row in parse_jsonl(map(bytes.decode, gzip.open(fn))):
             schema = merge_schema(row, schema)
 
     print(json.dumps(schema))
