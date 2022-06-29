@@ -23,19 +23,23 @@ def coerce_deep(v, schema, path=''):
         return type(schema)(v)
 
 
+def pydict_from_rows(schemadict, rows):
+    out = {k:list() for k in schemadict}
+    for i, row in enumerate(rows):
+        for k, v in row.items():
+            out[k].append(coerce_deep(v, schemadict[k]))
+
+    return out
+
 
 def main(schemafn, datafn, outfn):
     schemadict = json.loads(open(schemafn).read())
     schema = pa.schema(schema_infer.schemify(schemadict))
-    out = {k:list() for k in schemadict}
-    for i, row in enumerate(rsd.parse_jsonl(map(bytes.decode, gzip.open(datafn)))):
-        for k, v in row.items():
-            out[k].append(coerce_deep(v, schemadict[k]))
-
-    batch = pa.RecordBatch.from_pydict(out, schema=schema)
-    writer = pq.ParquetWriter(outfn, schema)
-    writer.write_batch(batch)
-    writer.close()
+    with pq.ParquetWriter(outfn, schema) as writer:
+        for row in rsd.parse_jsonl(map(bytes.decode, gzip.open(datafn))):
+            out = pydict_from_rows(schemadict, [row])
+            batch = pa.RecordBatch.from_pydict(out, schema=schema)
+            writer.write_batch(batch)
 
 
 main(*sys.argv[1:])
