@@ -41,4 +41,5 @@ def main(schemafn, datafn, outfn):
         writer.write_batch(batch)
 
 
-main(*sys.argv[1:])
+if __name__ == "__main__":
+    main(*sys.argv[1:])
