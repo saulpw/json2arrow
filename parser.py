@@ -5,7 +5,6 @@ import gzip
 import json
 
 import schema_infer
-import readysetdata as rsd
 
 import pyarrow.parquet as pq
 import pyarrow as pa
@@ -36,10 +35,11 @@ def main(schemafn, datafn, outfn):
     schemadict = json.loads(open(schemafn).read())
     schema = pa.schema(schema_infer.schemify(schemadict))
     with pq.ParquetWriter(outfn, schema) as writer:
-        for row in rsd.parse_jsonl(map(bytes.decode, gzip.open(datafn))):
-            out = pydict_from_rows(schemadict, [row])
-            batch = pa.RecordBatch.from_pydict(out, schema=schema)
-            writer.write_batch(batch)
+        rows = schema_infer.parse_jsonl(map(bytes.decode, gzip.open(datafn)))
+        out = pydict_from_rows(schemadict, rows)
+        batch = pa.RecordBatch.from_pydict(out, schema=schema)
+        writer.write_batch(batch)
 
 
-main(*sys.argv[1:])
+if __name__ == "__main__":
+    main(*sys.argv[1:])
